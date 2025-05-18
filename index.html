@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎈ひみつメッセージボード</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', Arial, sans-serif;
+      background: #fffbf0;
+      color: #444;
+      padding: 40px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.8em;
+      margin-bottom: 20px;
+      color: #ff69b4;
+      text-shadow: 1px 1px 0 #ffb6c1;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    input, button {
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid #ff69b4;
+      width: 320px;
+      max-width: 90%;
+      font-size: 1.1em;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #ff1493;
+      outline: none;
+      background: #fff0f6;
+    }
+
+    button {
+      background: #ff69b4;
+      color: white;
+      cursor: pointer;
+      margin-top: 12px;
+      font-weight: bold;
+      box-shadow: 0 5px 8px rgba(255, 105, 180, 0.4);
+    }
+
+    button:hover {
+      background: #ff1493;
+      box-shadow: 0 8px 12px rgba(255, 20, 147, 0.6);
+    }
+
+    form {
+      margin-bottom: 40px;
+      background: #fff0f6;
+      padding: 25px 20px;
+      border-radius: 18px;
+      box-shadow: 0 3px 7px rgba(255, 105, 180, 0.2);
+      display: inline-block;
+      max-width: 360px;
+      width: 90%;
+    }
+
+    h2 {
+      margin-top: 50px;
+      font-size: 1.8em;
+      color: #ff69b4;
+    }
+
+    ul#results {
+      list-style: none;
+      padding: 0;
+      margin-top: 25px;
+      max-width: 360px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    li {
+      background: #fff0f6;
+      padding: 18px;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      font-size: 1.1em;
+      color: #c71585;
+      box-shadow: 0 0 10px #ffb6c1;
+      animation: popIn 0.5s ease forwards;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease;
+    }
+
+    li:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #ff69b4;
+    }
+
+    @keyframes popIn {
+      from {opacity: 0; transform: scale(0.85);}
+      to {opacity: 1; transform: scale(1);}
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎈ひみつメッセージボード</h1>
+
+  <form id="secretForm">
+    <label>だれに送る？</label>
+    <input id="targetName" placeholder="なまえを入れてね！例：さくらちゃん" required />
+    <label>ひみつのメッセージは？</label>
+    <input id="message" placeholder="ここにメッセージを書こう♪" required />
+    <button type="submit">ひみつを送る！</button>
+  </form>
+
+  <h2>🔎 メッセージをさがす</h2>
+  <form id="searchForm">
+    <label>だれのメッセージ？</label>
+    <input id="searchName" placeholder="なまえを入力してね！例：さくらちゃん" required />
+    <button type="submit">みんなのメッセージを見る！</button>
+  </form>
+
+  <ul id="results"></ul>
+
+  <script>
+    const API_URL = ' link of your api ';
+
+    document.getElementById('secretForm').onsubmit = async (e) => {
+      e.preventDefault();
+
+      const data = {
+        targetName: document.getElementById('targetName').value,
+        message: document.getElementById('message').value
+      };
+
+      console.log("POST request body:", data);
+
+      const res = await fetch(API_URL + '/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const postResponseData = await res.clone().json().catch(() => ({}));
+      console.log("POST response:", res.status, postResponseData);
+
+      document.getElementById('secretForm').reset();
+      alert("✨ひみつのメッセージを送ったよ！");
+    };
+
+    document.getElementById('searchForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('searchName').value;
+      const ul = document.getElementById('results');
+      ul.innerHTML = '';
+
+      console.log(`Fetching messages for: ${name}`);
+
+      try {
+        const res = await fetch(`${API_URL}/messages?targetName=${name}`);
+        console.log("GET response status:", res.status);
+
+        const items = await res.clone().json().catch(() => {
+          console.warn("Could not parse JSON from GET response");
+          return null;
+        });
+
+        console.log("GET response data:", items);
+
+        if (!res.ok || !Array.isArray(items)) {
+          ul.innerHTML = `<li>❌ エラー: ${items?.error || '不明なエラー'}</li>`;
+          return;
+        }
+
+        if (items.length === 0) {
+          ul.innerHTML = '<li>😢 メッセージはまだないみたい...</li>';
+          return;
+        }
+
+        items.forEach(i => {
+          const li = document.createElement('li');
+          li.textContent = i.message;
+          ul.appendChild(li);
+        });
+      } catch (err) {
+        console.error("GET error:", err);
+        ul.innerHTML = `<li>💥 ネットワークエラー: ${err.message}</li>`;
+      }
+    };
+  </script>
+
+</body>
+</html>
